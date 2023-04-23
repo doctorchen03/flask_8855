@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="WITS 8855 智能客服">
+
+  <title>WITS 8855 智能客服</title>
+  <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/wits_logo.png') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+</head>
+
+<body>
+  <header>
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">WITS 8855 智能客服 (BETA-V0.01)</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+          aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+          <ul class="navbar-nav me-auto mb-2 mb-md-0">
+            <!-- 登入後才可見到的導覽列 -->
+            <span class="navbar-text">
+              {{ current_user.id }}，你好
+            </span>
+            {% if current_user.id == "admin": %}
+            <a class="nav-link" href="/chat_history">聊天歷史紀錄</a>
+            {% endif %}
+            {% if current_user.is_authenticated %}
+            <a class="nav-link" href="/">8855</a>
+            <a class="nav-link" href="/reservation_history">預約會議室</a>
+            <a class="nav-link" href="/logout">登出</a>
+            {% else %}
+            <a class="nav-link" href="/login">登入</a>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Begin page content -->
+  <main class="flex-shrink-0">
+    <div class="container">
+      <br>
+      <br>
+      <h1 class="mt-5">WITS 8855 智能客服</h1>
+      <p class="lead">
+        任何緯創軟體的問題或支援，我都可以幫上忙
+      </p>
+
+
+      <div id="list-group" class="list-group w-auto">
+
+      </div>
+
+      <div class="input-group mb-3">
+        <input type="text" class="form-control" id="chat-input" value="我能問甚麼?">
+        <input type="hidden" id="chat-input-session-token" value="">
+        <input type="hidden" id="chat-input-param1" value="">
+        <div class="input-group-append">
+          <button id="gpt-button" class="btn btn-primary">詢問</button>
+        </div>
+      </div>
+
+
+    </div>
+  </main>
+
+
+  <script src="https://code.jquery.com/jquery-3.6.3.min.js"
+    integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+    crossorigin="anonymous"></script>
+
+  <script>
+    //v0.03 START
+    document.getElementById('chat-input')
+      .addEventListener('change', function (e) {
+        $('#gpt-button').click();
+      }, false);
+    //v0.03 END
+    function zeroPad(num, places) {
+      var zero = places - num.toString().length + 1;
+      return Array(+(zero > 0 && zero)).join("0") + num;
+    }    
+    $("#gpt-button").click(function () {
+      var chat_input_param1 = $("#chat-input-param1").val();
+      var session_token = $("#chat-input-session-token").val();
+      var question = $("#chat-input").val();
+      let html_data = '';
+      html_data += `
+          <div class="list-group-item list-group-item-action d-flex gap-3 py-3">
+            <img src="{{ url_for('static', filename='images/favicon_2.png') }}" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
+            <div class="d-flex gap-2 w-100 justify-content-between">
+              <div>
+                <p >${question}</p>
+              </div>
+            </div>
+          </div>
+          `;
+      $("#chat-input").val('');
+      $("#list-group").append(html_data);
+      window.scrollTo(0, $('#list-group').height());//v0.03
+      //0.05 START
+      console.log('--------[TEST CODE]--------');
+      console.log(question);
+      console.log('[TEST CODE] ' + session_token);
+      console.log('--------[TEST CODE]--------');
+      if (String(session_token).indexOf('r.m.r_') > -1 && question.trim() != '') {
+        alert('取消預約會議室?');
+        window.location.reload();
+      }
+      if (String(session_token).indexOf('r.m.r_') > -1 && String(chat_input_param1).indexOf('GET_EMPTY_MEETING_ROOMS') > -1) {
+        console.log('if(String(session_token).indexOf(r.m.r_)>0');
+        question = 'GET_EMPTY_MEETING_ROOMS=<0>;<1>;<2>';
+        console.log(question);
+        var date = $('#date').first().val();
+        var start_time = $('#start-time').find(":selected").val();
+        //var start_time = $('#start-time').first().val();
+        var end_time_interval = $('#end-time').find(":selected").val();
+        var end_time_hr = parseInt(String(start_time).split(':')[0]) + parseInt(end_time_interval)
+        if(end_time_hr >= 24){
+          end_time_hr = end_time_hr - 24
+        }
+        var end_time = zeroPad(end_time_hr, 2) + ':' + String(start_time).split(':')[1];
+        //var end_time = $('#end-time').first().val();
+        var datetime_str = date + ' ' + start_time + ':00';
+        //
+        var current = new Date();
+        var reserve_datetime = new Date(datetime_str);
+        console.log(datetime_str);
+        if (reserve_datetime < current) {
+          alert('預約時間需晚於現在時間, <' + datetime_str + '>');
+          window.location.reload();
+        }
+        console.log(date);
+        console.log(start_time);
+        console.log(end_time);
+        question = question.replace('<0>', date);
+        question = question.replace('<1>', start_time);
+        question = question.replace('<2>', end_time);
+        console.log(question);
+        //
+        $("#chat-input-param1").val('SELECT_A_EMPTY_MEETING_ROOM');
+      }
+      else if (String(session_token).indexOf('r.m.r_') > -1 && String(chat_input_param1).indexOf('SELECT_A_EMPTY_MEETING_ROOM') > -1) {
+        //<------------------------------------------------------->
+        var date = $('#date').first().val();
+        var start_time = $('#start-time').find(":selected").val();
+        //var start_time = $('#start-time').first().val();
+        var end_time_interval = $('#end-time').find(":selected").val();
+        var end_time_hr = parseInt(String(start_time).split(':')[0]) + parseInt(end_time_interval)
+        if(end_time_hr >= 24){
+          end_time_hr = end_time_hr - 24
+        }
+        var end_time = zeroPad(end_time_hr, 2) + ':' + String(start_time).split(':')[1];
+        //var start_time = $('#start-time').first().val();
+        //var end_time = $('#end-time').first().val();
+        var meeting_rooms = document.getElementsByName('meeting_room');
+        var selected_meeting_room_id;
+        for (var i = 0; i < meeting_rooms.length; i++) {
+          if (meeting_rooms[i].checked) {
+            selected_meeting_room_id = meeting_rooms[i].value;
+          }
+        }
+        console.log('SELECT_A_EMPTY_MEETING_ROOM=>' + selected_meeting_room_id);
+        //alert(selected_meeting_room_id);
+        question = 'SELECT_A_EMPTY_MEETING_ROOM=<0>;<1>;<2>;<3>';
+        question = question.replace('<0>', selected_meeting_room_id);
+        question = question.replace('<1>', date);
+        question = question.replace('<2>', start_time);
+        question = question.replace('<3>', end_time);
+      }
+      //0.05 END
+      $.ajax({
+        type: "POST",
+        url: "/",
+        data: { 'prompt_question': question, 'chat_input_session_token': session_token },
+        success: function (data) {
+          console.log(data);
+          console.log(data.answer);
+          console.log(data.chat_input_session_token);
+          $("#chat-input-session-token").val(data.chat_input_session_token);
+          let gpt_data = '';
+          gpt_data += `
+                <div class="list-group-item list-group-item-action d-flex gap-3 py-3">
+                  <img src="{{ url_for('static', filename='images/wits_logo.png') }}" alt="twbs" width="32" height="32" class="rounded-circle flex-shrink-0">
+                  <div class="d-flex gap-2 w-100 justify-content-between">
+                  <div>
+                  <p>${data.answer}</p>
+                  </div>
+                </div>
+                </div>
+                `;
+          $("#list-group").append(gpt_data);
+          //請選擇預約時間
+          if (data.answer.indexOf('請選擇預約時間') >= 0) {
+            //chat-input-param1
+            $("#chat-input-param1").val('GET_EMPTY_MEETING_ROOMS');
+          } else if (data.answer.indexOf('下列是可預約的會議室') >= 0) {
+            $("#chat-input-param1").val('SELECT_A_EMPTY_MEETING_ROOM');
+          }
+          else {
+            $("#chat-input-param1").val('');
+          }
+          //$("#chat-input").append(gpt_data);//[TEST CODE]
+          window.scrollTo(0, $('#list-group').height());//v0.03
+          //
+          if (data.answer.indexOf('已經成功為你預約會議室') >= 0) {
+            alert('已經成功為你預約會議室，請到<預約會議室>確認結果');
+            window.location.reload();
+          }else if (data.answer.indexOf('此時段已被預約，請重新選擇') >= 0) {
+            alert('此時段已被預約，請重新選擇');
+            window.location.reload();
+          }
+        }
+      });
+
+    });
+    /*-----------------------------------------*/
+
+  </script>
+</body>
+
+</html>

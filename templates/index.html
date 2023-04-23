@@ -49,6 +49,7 @@
 
       <div class="input-group mb-3">
         <input type="text" class="form-control" id="chat-input" value="我能問甚麼?">
+        <input type="hidden" id="chat-input-session-token" value="">
         <div class="input-group-append">
           <button id="gpt-button" class="btn btn-primary">詢問</button>
         </div>
@@ -73,6 +74,7 @@
       }, false);
     //v0.03 END
     $("#gpt-button").click(function () {
+      var session_token = $("#chat-input-session-token").val();
       var question = $("#chat-input").val();
       let html_data = '';
       html_data += `
@@ -92,10 +94,12 @@
       $.ajax({
         type: "POST",
         url: "/",
-        data: { 'prompt_question': question },
+        data: { 'prompt_question': question, 'chat_input_session_token':session_token },
         success: function (data) {
           console.log(data);
           console.log(data.answer);
+          console.log(data.chat_input_session_token);
+          $("#chat-input-session-token").val(data.chat_input_session_token);
           let gpt_data = '';
           gpt_data += `
                 <div class="list-group-item list-group-item-action d-flex gap-3 py-3">
